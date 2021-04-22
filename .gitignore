@@ -1,0 +1,30 @@
+# Results
+results
+*.log
+*.npz
+image_classification/results.tar.gz
+image_classification/results
+image_classification/results.tsv
+
+# IDE & OS
+.idea
+.DS_Store
+
+# Documents
+*.pdf
+*.png
+*.jpg
+*.pptx
+
+# Python
+*.pyc
+__pycache__
+
+# VIM
+*.swp
+
+# Build
+actnn/build
+actnn/dist
+actnn/actnn.egg-info
+actnn/actnn/cpp_extension/*.so

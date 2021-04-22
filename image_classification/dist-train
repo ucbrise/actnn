@@ -1,0 +1,15 @@
+NNODES=$1
+NODE_RANK=$2
+MASTER_ADDR=$3
+NPROC_PER_NODE=$4
+ARCH=$5
+ARGS=$6
+ID=$7
+DIR=$8
+
+BATCH_SIZE=${9:-32}
+LR=0.256
+WARMUP=4
+
+mkdir results/$ID
+python3 ./multiproc.py --nnodes $NNODES --node_rank $NODE_RANK --master_addr $MASTER_ADDR --nproc_per_node $NPROC_PER_NODE ./main.py --arch $ARCH --gather-checkpoints --workspace results/$ID --batch-size $BATCH_SIZE --lr $LR --warmup $WARMUP $ARGS  $DIR

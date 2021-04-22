@@ -1,0 +1,19 @@
+NNODES=$1
+NODE_RANK=$2
+MASTER_ADDR=$3
+NPROC_PER_NODE=$4
+ARCH=$5
+ARGS=$6
+ID=$7
+DIR=$8
+
+BATCH_SIZE=50
+LR=0.3
+WARMUP=4
+
+mkdir results/$ID
+python ./multiproc.py --nnodes $NNODES --node_rank $NODE_RANK --master_addr $MASTER_ADDR --master_port 29501 --nproc_per_node $NPROC_PER_NODE \
+./main.py --arch $ARCH --num-classes 1000 --gather-checkpoints --workspace results/$ID --batch-size $BATCH_SIZE --lr $LR --gather-checkpoints  --warmup $WARMUP $ARGS \
+--evaluate --training-only \
+--resume results/imagenet/checkpoint-10.pth.tar \
+--resume2 results/imagenet/checkpoint-10.pth.tar $DIR
