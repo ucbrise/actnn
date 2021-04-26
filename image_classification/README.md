@@ -2,6 +2,10 @@
 
 ## Requirement
 - Put the ImageNet dataset to `~/imagenet`
+- Install required packages
+```bash
+pip install matplotlib tqdm
+```
 - Install apex
 ```bash
 git clone https://github.com/NVIDIA/apex
@@ -43,6 +47,6 @@ python3 main.py --dataset cifar10 --arch preact_resnet56 --epochs 200 --num-clas
     --resume results/cifar100/checkpoint-10.pth.tar --resume2 results/cifar100/checkpoint-10.pth.tar  ~/data/cifar100
 ```
 
-| *quantize config* | *Overall Var* | *Val Top1* |
-|--------|----------|---------|
-| -c quantize --ca=True --cabits=2 --ibits=8 --calg pl | 0.03805697709321976 |  |
+| *quantize config* | *Overall Var* | 
+|--------|----------|
+| -c quantize --ca=True --cabits=2 --ibits=8 --calg pl | 0.03805697709321976 | 

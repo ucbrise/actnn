@@ -19,6 +19,7 @@ class QBNScheme(QScheme):
             self.prev_linear = None
 
     def compute_quantization_bits(self, input):
+        self.prev_linear = QScheme.prev_layer
         N = input.shape[0]
         D = input.shape[1]
         input_flatten = input.view(N, -1)
@@ -53,4 +54,7 @@ class QBNScheme(QScheme):
     @staticmethod
     def allocate_perlayer():
         for layer in QBNScheme.layers:
-            layer.bits = layer.prev_linear.bits
+            if layer.prev_linear is not None:
+                layer.bits = layer.prev_linear.bits
+            else:
+                layer.bits = 8

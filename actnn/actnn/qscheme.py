@@ -5,12 +5,14 @@ from actnn.conf import config
 import actnn.cpp_extension.minimax as ext_minimax
 import actnn.cpp_extension.calc_precision as ext_calc_precision
 
+
 class QScheme(object):
     num_samples = 1
     num_layers = 0
     batch = None
     update_scale = True
     layers = []
+    prev_layer = None
 
     def __init__(self, layer, group=0, num_locations=1, depthwise_groups=1):
         self.initial_bits = config.initial_bits
@@ -53,6 +55,7 @@ class QScheme(object):
                 self.scales = scale.mean()
 
     def compute_quantization_bits(self, input):
+        QScheme.prev_layer = self
         N = input.shape[0]
         D = input.shape[1]
         input_flatten = input.view(N, -1)
@@ -135,6 +138,7 @@ class QScheme(object):
         for layer in QScheme.layers:
             if layer.layer.weight.requires_grad:
                 first_layer = layer
+                break
 
         # If myself is the last layer, then reallocate bits per layer
         if config.compress_activation and config.training:
