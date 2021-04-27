@@ -55,7 +55,7 @@ print(model)    # Should be actnn.QConv2d, actnn.QBatchNorm2d, etc.
 ActNN is implemented as a collection of memory-saving layers, including `actnn.QConv1d, QConv2d, QConv3d, QConvTranspose1d, QConvTranspose2d, QConvTranspose3d, 
     QBatchNorm1d, QBatchNorm2d, QBatchNorm3d, QLinear, QReLU, QSyncBatchNorm, QMaxPool2d`. These layers have identical interface to their PyTorch counterparts. 
 You can construct the model manually using these layers as the building blocks.
-See `ResNetBuilder` in [image_classification/image_classification/resnet.py](image_classification/image_classification/resnet.py) for example.
+See `ResNetBuilder` and `resnet_configs` in [image_classification/image_classification/resnet.py](image_classification/image_classification/resnet.py) for example.
 - (Optional) Change the data loader  
 If you want to use per-sample gradient information for adaptive quantization,
 you have to update the dataloader to return sample indices.
@@ -81,7 +81,7 @@ See [mem_speed_benchmark](mem_speed_benchmark/)
 
 ## FAQ
 1. Does ActNN supports CPU training?  
-Currently,ActNN only supports CUDA.
+Currently, ActNN only supports CUDA.
  
 2. Accuracy degradation / diverged training with ActNN.  
 ActNN applies lossy compression to the activations. In some challenging cases, our default compression strategy might be too aggressive. 
