@@ -7,6 +7,7 @@ import torch.distributed as dist
 import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
+import actnn
 from actnn import config, QScheme, QModule
 
 try:
@@ -138,7 +139,7 @@ def add_parser_arguments(parser):
     parser.add_argument('--cabits', type=float, default=8, help='activation number of bits')
     parser.add_argument('--qat', type=int, default=8, help='quantization aware training bits')
     parser.add_argument('--ibits', type=int, default=8, help='Initial precision for the allocation algorithm')
-    parser.add_argument('--calg', type=str, default='pl', help='Quantization algorithm, naive, pg, ps, or pl')
+    parser.add_argument('--actnn-level', type=str, default='L3', help='Optimization level for ActNN')
     # parser.add_argument('--pergroup', type=str2bool, default=True, help='Per-group range')
     parser.add_argument('--groupsize', type=int, default=256, help='Size for each quantization group')
     # parser.add_argument('--perlayer', type=str2bool, default=True, help='Per layer quantization')
@@ -146,29 +147,11 @@ def add_parser_arguments(parser):
 
 
 def main(args):
+    actnn.set_optimization_level(args.actnn_level)
+
+    # Note: we use these flags for debugging. Users may simply use "actnn.set_optimization_level"
     config.compress_activation = args.ca
     config.stochastic = args.sq
-    if args.calg == 'naive':
-        config.activation_compression_bits = [int(args.cabits)]
-        config.pergroup = False
-        config.perlayer = False
-        config.initial_bits = int(args.cabits)
-    elif args.calg == 'pg':
-        config.activation_compression_bits = [int(args.cabits)]
-        config.pergroup = True
-        config.perlayer = False
-        config.initial_bits = int(args.cabits)
-    elif args.calg == 'ps':
-        config.activation_compression_bits = [args.cabits]
-        config.pergroup = True
-        config.perlayer = False
-        config.initial_bits = 8
-    else:
-        config.activation_compression_bits = [args.cabits]
-        config.pergroup = True
-        config.perlayer = True
-        config.initial_bits = 8
-
     config.qat = args.qat
     config.use_gradient = args.usegradient
     config.group_size = args.groupsize
@@ -301,12 +284,19 @@ def main(args):
     debug_loader, debug_loader_len = get_debug_loader(args.data, args.batch_size, args.num_classes, False, workers=args.workers, fp16=args.fp16)
 
     if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
-        logger = log.Logger(
-                args.print_freq,
-                [
+        logger_backends = [
                     log.JsonBackend(os.path.join(args.workspace, args.raport_file), log_level=1),
                     log.StdOut1LBackend(train_loader_len, val_loader_len, args.epochs, log_level=0),
-                ])
+                ]
+        try:
+            import wandb
+            wandb.init(project="actnn", config=args, name=args.workspace)
+            logger_backends.append(log.WandbBackend(wandb))
+            print('Logging to wandb...')
+        except ImportError:
+            print('Wandb not found, logging to stdout and json...')
+
+        logger = log.Logger(args.print_freq, logger_backends)
 
         for k, v in args.__dict__.items():
             logger.log_run_tag(k, v)

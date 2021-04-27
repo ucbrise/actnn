@@ -78,7 +78,7 @@ Currently,ActNN only supports CUDA.
  
 2. Accuracy degradation / diverged training with ActNN.  
 ActNN applies lossy compression to the activations. In some challenging cases, our default compression strategy might be too aggressive. 
-In this case, you may try more conservative compression strategies (which consume more memory) in the following order:
+In this case, you may try more conservative compression strategies (which consume more memory):
     - 4-bit per-group quantization  
    ```python
    actnn.set_optimization_level("L2")
@@ -87,5 +87,6 @@ In this case, you may try more conservative compression strategies (which consum
    ```python
    actnn.set_optimization_level("L2")
    actnn.config.activation_compression_bits = [8]
-   ```
-   
+   ```  
+    If none of these works, you may create an issue.
+
