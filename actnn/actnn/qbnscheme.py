@@ -41,7 +41,7 @@ class QBNScheme(QScheme):
             mx = torch.ones_like(mx) * mx.max()
 
         # Average range over pixels [N]
-        Range_sqr = torch.norm((mx - mn).view(N, -1), dim=1).square() * (config.group_size / num_pixels)
+        Range_sqr = torch.norm((mx - mn).view(N, -1), dim=1).float().square() * (config.group_size / num_pixels)
 
         # greedy
         C = Range_sqr.to(torch.float32).cpu()

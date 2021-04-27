@@ -1,5 +1,11 @@
 # ActNN : Activation Compressed Training
 
+ActNN is a PyTorch library for memory-efficient training. 
+It reduces training memory footprint by compressing the saved activations.
+ActNN is implemented as a collection of memory-saving layers.
+These layers have identical interface to their PyTorch counterparts.
+
+
 ## Install
 - Requirements
 ```
@@ -45,12 +51,11 @@ print(model)    # Should be actnn.QConv2d, actnn.QBatchNorm2d, etc.
    
 
 ### Advanced Features
-- Mixed precision training   
-ActNN works seamlessly with [Amp](https://github.com/NVIDIA/apex), please see [image_classification](image_classification/) for an example.
 - Convert the model manually.  
 ActNN is implemented as a collection of memory-saving layers, including `actnn.QConv1d, QConv2d, QConv3d, QConvTranspose1d, QConvTranspose2d, QConvTranspose3d, 
     QBatchNorm1d, QBatchNorm2d, QBatchNorm3d, QLinear, QReLU, QSyncBatchNorm, QMaxPool2d`. These layers have identical interface to their PyTorch counterparts. 
 You can construct the model manually using these layers as the building blocks.
+See `ResNetBuilder` in [image_classification/image_classification/resnet.py](image_classification/image_classification/resnet.py) for example.
 - (Optional) Change the data loader  
 If you want to use per-sample gradient information for adaptive quantization,
 you have to update the dataloader to return sample indices.
@@ -62,6 +67,8 @@ config.use_gradient = True
 QScheme.num_samples = 1300000   # the size of training set
 ```
 You can find sample code in the above script.
+- (Beta) Mixed precision training   
+ActNN works seamlessly with [Amp](https://github.com/NVIDIA/apex), please see [image_classification](image_classification/) for an example.
 
 ## Image Classification
 See [image_classification](image_classification/)
@@ -88,5 +95,5 @@ In this case, you may try more conservative compression strategies (which consum
    actnn.set_optimization_level("L2")
    actnn.config.activation_compression_bits = [8]
    ```  
-    If none of these works, you may create an issue.
+    If none of these works, you may report to us by creating an issue.
 

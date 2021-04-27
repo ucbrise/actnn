@@ -36,7 +36,7 @@ python3 main.py --dataset cifar10 --arch preact_resnet56 --epochs 200 --num-clas
 ## Train ResNet50 v1.5 on ImageNet (Mixed Precision)
 ```
 ./dist-train 1 0 127.0.0.1 1 resnet50 \
-   "--amp --static-loss-scale 128 -c quantize --ca=True --actnn-level L3"\
+   "--amp --dynamic-loss-scale -c quantize --ca=True --actnn-level L3"\
    tmp ~/imagenet 256
 ```
 

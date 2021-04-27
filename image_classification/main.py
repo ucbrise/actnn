@@ -143,14 +143,14 @@ def add_parser_arguments(parser):
     # parser.add_argument('--pergroup', type=str2bool, default=True, help='Per-group range')
     parser.add_argument('--groupsize', type=int, default=256, help='Size for each quantization group')
     # parser.add_argument('--perlayer', type=str2bool, default=True, help='Per layer quantization')
-    parser.add_argument('--usegradient', type=str2bool, default=True, help='Using gradient information for persample')
+    parser.add_argument('--usegradient', type=str2bool, default=False, help='Using gradient information for persample')
 
 
 def main(args):
     actnn.set_optimization_level(args.actnn_level)
 
     # Note: we use these flags for debugging. Users may simply use "actnn.set_optimization_level"
-    config.compress_activation = args.ca
+    # config.compress_activation = args.ca
     config.stochastic = args.sq
     config.qat = args.qat
     config.use_gradient = args.usegradient

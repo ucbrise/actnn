@@ -48,10 +48,10 @@ class QScheme(object):
         if QScheme.update_scale:
             if config.use_gradient:
                 assert QScheme.batch is not None
-                scale = grad.view(grad.shape[0], -1).norm(dim=1).square().cpu()
+                scale = grad.view(grad.shape[0], -1).float().norm(dim=1).square().cpu()
                 self.scales[QScheme.batch] = self.scales[QScheme.batch] * 0.5 + scale * 0.5
             else:
-                scale = grad.view(grad.shape[0], -1).norm(dim=1).square()
+                scale = grad.view(grad.shape[0], -1).float().norm(dim=1).square()
                 self.scales = scale.mean()
 
     def compute_quantization_bits(self, input):
@@ -77,7 +77,7 @@ class QScheme(object):
             mx = torch.ones_like(mx) * mx.max()
 
         # Average range over pixels     G * ||R_n||^2 / I
-        Range_sqr = torch.norm((mx - mn).view(N, -1), dim=1).square() * (config.group_size / num_pixels)
+        Range_sqr = torch.norm((mx - mn).view(N, -1), dim=1).float().square() * (config.group_size / num_pixels)
 
         # greedy
         grad_sum = self.get_scale().cuda()
