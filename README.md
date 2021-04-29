@@ -1,10 +1,10 @@
 # ActNN : Activation Compressed Training
 
-ActNN is a PyTorch library for memory-efficient training. 
-It reduces training memory footprint by compressing the saved activations.
-ActNN is implemented as a collection of memory-saving layers.
-These layers have identical interface to their PyTorch counterparts.
+This is the official project repository for [ActNN: Reducing Training Memory Footprint via 2-Bit Activation Compressed Training](http://arxiv.org/abs/2104.xxxxx) by
+Jianfei Chen\*, Lianmin Zheng\*, Zhewei Yao, Dequan Wang, Ion Stoica, Michael W. Mahoney, and Joseph E. Gonzalez.
 
+**TL; DR.**
+ActNN is a PyTorch library for memory-efficient training. It reduces the training memory footprint by compressing the saved activations. ActNN is implemented as a collection of memory-saving layers. These layers have an identical interface to their PyTorch counterparts.
 
 ## Install
 - Requirements
@@ -70,14 +70,66 @@ You can find sample code in the above script.
 - (Beta) Mixed precision training   
 ActNN works seamlessly with [Amp](https://github.com/NVIDIA/apex), please see [image_classification](image_classification/) for an example.
 
-## Image Classification
+## Examples
+
+### Benchmark Memory Usage and Training Speed
+See [mem_speed_benchmark](mem_speed_benchmark/). Please do NOT measure the memory usage with `nvidia-smi`, which could be misleading.
+
+### Image Classification
 See [image_classification](image_classification/)
 
-## Sementic Segmentation
-Will be added later.
+### Detection, Segmentation, ...
+Here is the example memory-efficient training for ResNet50, built upon the [OpenMMLab](https://openmmlab.com/) toolkits.
+We use ActNN with the default optimization level (L3).
+Our training runs are available at [Weights & Biases](https://wandb.ai/actnn).
 
-## Benchmark Memory Usage and Training Speed
-See [mem_speed_benchmark](mem_speed_benchmark/). Please do NOT measure the memory usage with `nvidia-smi`, which could be misleading.
+#### Installation
+
+1. Install [mmcv](https://github.com/DequanWang/actnn-mmcv)
+```bash
+export MMCV_ROOT=/path/to/clone/actnn-mmcv
+git clone https://github.com/DequanWang/actnn-mmcv $MMCV_ROOT
+cd $MMCV_ROOT
+MMCV_WITH_OPS=1 MMCV_WITH_ORT=0 pip install -e .
+```
+
+2. Install [mmdet](https://github.com/DequanWang/actnn-mmdet), and [mmseg](https://github.com/DequanWang/actnn-mmseg), ...
+```bash
+export MMDET_ROOT=/path/to/clone/actnn-mmdet
+git clone https://github.com/DequanWang/actnn-mmdet $MMDET_ROOT
+cd $MMDET_ROOT
+python setup.py develop
+```
+
+```bash
+export MMSEG_ROOT=/path/to/clone/actnn-mmseg
+git clone https://github.com/DequanWang/actnn-mmseg $MMSEG_ROOT
+cd $MMSEG_ROOT
+python setup.py develop
+```
+
+#### Single GPU training
+```python
+cd $MMDET_ROOT
+python tools/train.py configs/actnn/faster_rcnn_r50_fpn_1x_coco_1gpu.py
+# https://wandb.ai/actnn/detection/runs/ye0aax5s
+# ActNN mAP 37.4 vs Official mAP 37.4
+python tools/train.py configs/actnn/retinanet_r50_fpn_1x_coco_1gpu.py
+# https://wandb.ai/actnn/detection/runs/1x9cwokw
+# ActNN mAP 36.3 vs Official mAP 36.5
+```
+
+```python
+cd $MMSEG_ROOT
+python tools/train.py configs/actnn/fcn_r50-d8_512x1024_80k_cityscapes_1gpu.py
+# https://wandb.ai/actnn/segmentation/runs/159if8da
+# ActNN mIoU 72.9 vs Official mIoU 73.6
+python tools/train.py configs/actnn/fpn_r50_512x1024_80k_cityscapes_1gpu.py
+# https://wandb.ai/actnn/segmentation/runs/25j9iyv3
+# ActNN mIoU 74.7 vs Official mIoU 74.5
+```
+
+For more detailed guidance, please refer to the docs of [mmcv](https://github.com/DequanWang/actnn-mmcv), [mmdet](https://github.com/DequanWang/actnn-mmdet), and [mmseg](https://github.com/DequanWang/actnn-mmseg).
 
 ## FAQ
 1. Does ActNN supports CPU training?  
@@ -97,4 +149,20 @@ In this case, you may try more conservative compression strategies (which consum
    ```  
     If none of these works, you may report to us by creating an issue.
 
+## Correspondence
 
+Please email [Jianfei Chen](mailto:jianfeic@berkeley.edu) and [Lianmin Zheng](mailto:lmzheng@berkeley.edu).
+Any questions or discussions are welcomed!
+
+## Citation
+
+If the actnn library is helpful in your research, please consider citing our paper:
+
+```bibtex
+@inproceedings{chen2021actnn,
+  title={ActNN: Reducing Training Memory Footprint via 2-Bit Activation Compressed Training},
+  author={Chen, Jianfei and Zheng, Lianmin and Yao, Zhewei and Wang, Dequan and Stoica, Ion and Mahoney, Michael and Gonzalez, Joseph},
+  booktitle={arXiv preprint arXiv:2104.xxxxx},
+  year={2021}
+}
+```
