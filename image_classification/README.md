@@ -3,6 +3,8 @@ Mixed-precision training for ResNet50 v1.5 modified from [DeepLearningExamples](
 
 In this example, we use ActNN by manually constructing the model with the memory-saving layers.
 
+Our training logs are available at [Weights & Biases](https://wandb.ai/actnn/projects).
+
 ## Requirements
 - Put the ImageNet dataset to `~/imagenet`
 - Install required packages
