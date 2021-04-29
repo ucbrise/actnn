@@ -19,6 +19,7 @@ class QBNScheme(QScheme):
             self.prev_linear = None
 
     def compute_quantization_bits(self, input):
+        self.prev_linear = QScheme.prev_layer
         N = input.shape[0]
         D = input.shape[1]
         input_flatten = input.view(N, -1)
@@ -40,7 +41,7 @@ class QBNScheme(QScheme):
             mx = torch.ones_like(mx) * mx.max()
 
         # Average range over pixels [N]
-        Range_sqr = torch.norm((mx - mn).view(N, -1), dim=1).square() * (config.group_size / num_pixels)
+        Range_sqr = torch.norm((mx - mn).view(N, -1), dim=1).float().square() * (config.group_size / num_pixels)
 
         # greedy
         C = Range_sqr.to(torch.float32).cpu()
@@ -53,4 +54,7 @@ class QBNScheme(QScheme):
     @staticmethod
     def allocate_perlayer():
         for layer in QBNScheme.layers:
-            layer.bits = layer.prev_linear.bits
+            if layer.prev_linear is not None:
+                layer.bits = layer.prev_linear.bits
+            else:
+                layer.bits = 8

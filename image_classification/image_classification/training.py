@@ -440,7 +440,8 @@ def train_loop(model_and_loss, optimizer, new_optimizer, lr_scheduler, train_loa
                     'optimizer' : optimizer.state_dict(),
                 }, is_best, checkpoint_dir=checkpoint_dir, backup_filename=backup_filename)
 
-        if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
-            logger.end()
+        # if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
+        #     logger.end()
 
-    get_var(model_and_loss, optimizer, train_loader, 10, model_state)
+    if skip_training and skip_validation:
+        get_var(model_and_loss, optimizer, train_loader, 10, model_state)

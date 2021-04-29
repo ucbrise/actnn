@@ -185,7 +185,7 @@ class JsonBackend(object):
         self.json_log['run'][name] = val
 
     def log_end_epoch(self):
-        pass
+        print(json.dump(self.json_log, open(self.filename, 'w')))
 
     def log_end_iteration(self):
         pass
@@ -297,3 +297,33 @@ class StdOutBackend(object):
         pass
 
 
+class WandbBackend(object):
+    def __init__(self, wandb, log_level=0):
+        print("Logger: Wandb")
+        self.wandb = wandb
+        self.level = log_level
+        self.epoch_metrics = {}
+
+    def log_run_tag(self, name, val):
+        pass
+
+    def log_end_epoch(self):
+        print('Wandb log ', self.epoch_metrics)
+        self.wandb.log(self.epoch_metrics)
+        self.epoch_metrics = {}
+
+    def log_end_iteration(self):
+        pass
+
+    def log_epoch_metric(self, name, value):
+        if name == 'ep':
+            self.epoch = value
+            self.iteration = 0
+        else:
+            self.epoch_metrics[name] = value
+
+    def log_iteration_metric(self, name, value):
+        pass
+
+    def end(self):
+        self.wandb.finish()

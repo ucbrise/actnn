@@ -96,6 +96,10 @@ def get_var(model_and_loss, optimizer, val_loader, num_batches=20, model_state=N
         QScheme.allocate_perlayer()
         QBNScheme.allocate_perlayer()
 
+    for name, module in m.named_modules():
+        if hasattr(module, "scheme"):
+            print(name, module.scheme.bits)
+
     total_var = None
     total_error = None
     total_bias = None
