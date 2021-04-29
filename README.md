@@ -77,7 +77,7 @@ See [image_classification](image_classification/)
 Will be added later.
 
 ## Benchmark Memory Usage and Training Speed
-See [mem_speed_benchmark](mem_speed_benchmark/)
+See [mem_speed_benchmark](mem_speed_benchmark/). Please do NOT measure the memory usage with `nvidia-smi`, which could be misleading.
 
 ## FAQ
 1. Does ActNN supports CPU training?  
@@ -96,4 +96,5 @@ In this case, you may try more conservative compression strategies (which consum
    actnn.config.activation_compression_bits = [8]
    ```  
     If none of these works, you may report to us by creating an issue.
+
 
