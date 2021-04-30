@@ -1,5 +1,6 @@
 import ast
 import os
+import warnings
 
 def set_optimization_level(level):
     if level == 'L0':      # Do nothing
@@ -25,6 +26,9 @@ def set_optimization_level(level):
     elif level == 'L5':    # 2-bit + swap + defragmentation
         config.swap = True
         os.environ['PYTORCH_CACHE_THRESHOLD'] = '256000000'
+        warnings.warn("The defragmentation at L5 requires modification of the c++ "
+                      "code of PyTorch. You need to compile this special fork of "
+                      "PyTorch: https://github.com/merrymercy/pytorch/tree/actnn_exp")
     elif level == 'swap':
         config.swap = True
         config.compress_activation = False
