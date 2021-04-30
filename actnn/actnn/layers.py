@@ -1,5 +1,6 @@
 # The code is compatible with PyTorch 1.6/1.7
 from typing import List, Optional
+import warnings
 
 import torch
 import torch.nn as nn
@@ -492,9 +493,11 @@ class QAvgPool2d(_AvgPoolNd):
         self.divisor_override = divisor_override
 
     def forward(self, input: Tensor) -> Tensor:
+        # TODO: implement memory-optimized cuda kernel for this.
         #return F.avg_pool2d(input, self.kernel_size, self.stride,
         #                    self.padding, self.ceil_mode, self.count_include_pad, self.divisor_override)
-        # TODO: implement cuda kernel for this
+        warnings.warn("avg_pool2d is replcaed by max_pool2d, because the optimized cuda kernel"
+                      "for avg_pool2d is not implemented.")
         return ext_quantization.act_quantized_max_pool2d(
             input, self.kernel_size, self.stride,
             self.padding, (1, 1), self.ceil_mode,

@@ -542,6 +542,8 @@ std::pair<Tensor, Tensor> act_quantized_max_pool2d_forward_cuda(Tensor input,
   auto options = torch::TensorOptions().dtype(input.dtype()).device(input.device());
   Tensor output = torch::empty({N, C, H_out, W_out}, options);
   options = torch::TensorOptions().dtype(torch::kInt8).device(input.device());
+  TORCH_CHECK(!ceil_mode, "Do not support ceil_mode");
+  TORCH_CHECK(!return_indices, "Do not support return_indices");
   Tensor max_indices = torch::empty({N, C, H_out, W_out}, options);
 
   int threads = ACT_QUANTIZED_MAX_POOL2D_NUM_THREADS;

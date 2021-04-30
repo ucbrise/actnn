@@ -136,7 +136,7 @@ def dequantize_activation(quantized, q_input_shape):
     num_features = np.prod(q_input_shape[1:])
     input = input.view(N, -1)[:, :num_features]
     input = input.view(*q_input_shape)
-    return input
+    return input.contiguous()
 
 conv2d_layer_ct = 0
 bn_layer_ct = 0
