@@ -1,6 +1,6 @@
 # ActNN : Activation Compressed Training
 
-This is the official project repository for [ActNN: Reducing Training Memory Footprint via 2-Bit Activation Compressed Training](http://arxiv.org/abs/2104.xxxxx) by
+This is the official project repository for [ActNN: Reducing Training Memory Footprint via 2-Bit Activation Compressed Training](https://arxiv.org/abs/2104.14129) by
 Jianfei Chen\*, Lianmin Zheng\*, Zhewei Yao, Dequan Wang, Ion Stoica, Michael W. Mahoney, and Joseph E. Gonzalez.
 
 **TL; DR.**
@@ -162,7 +162,7 @@ If the actnn library is helpful in your research, please consider citing our pap
 @inproceedings{chen2021actnn,
   title={ActNN: Reducing Training Memory Footprint via 2-Bit Activation Compressed Training},
   author={Chen, Jianfei and Zheng, Lianmin and Yao, Zhewei and Wang, Dequan and Stoica, Ion and Mahoney, Michael and Gonzalez, Joseph},
-  booktitle={arXiv preprint arXiv:2104.xxxxx},
+  booktitle={arXiv preprint arXiv:2104.14129},
   year={2021}
 }
 ```
