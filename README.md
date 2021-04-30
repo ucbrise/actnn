@@ -6,6 +6,13 @@ Jianfei Chen\*, Lianmin Zheng\*, Zhewei Yao, Dequan Wang, Ion Stoica, Michael W.
 **TL; DR.**
 ActNN is a PyTorch library for memory-efficient training. It reduces the training memory footprint by compressing the saved activations. ActNN is implemented as a collection of memory-saving layers. These layers have an identical interface to their PyTorch counterparts.
 
+## Abstract
+The increasing size of neural network models has been critical for improvements in their accuracy, but device memory is not growing at the same rate. This creates fundamental challenges for training neural networks within limited memory environments. In this work, we propose ActNN, a memory-efficient training framework that stores randomly quantized activations for back propagation. We prove the convergence of ActNN for general network architectures, and we characterize the impact of quantization on the convergence via an exact expression for the gradient variance. Using our theory, we propose novel mixed-precision quantization strategies that exploit the activation's heterogeneity across feature dimensions, samples, and layers. These techniques can be readily applied to existing dynamic graph frameworks, such as PyTorch, simply by substituting the layers. We evaluate ActNN on mainstream computer vision models for classification, detection, and segmentation tasks. On all these tasks, ActNN compresses the activation to 2 bits on average, with negligible accuracy loss. ActNN reduces the memory footprint of the activation by 12×, and it enables training with a 6.6× to 14× larger batch size.
+
+![mem_speed_r50](mem_speed_benchmark/mem_speed_r50.png)
+*Batch size vs. training throughput on ResNet-50. Red cross mark means out-of-memory. The shaded yellow region denotes the possible batch sizes with full precision training. ActNN achieves significantly larger maximum batch size over other state-of-the-art systems and displays a nontrivial trade-off curve.*
+
+
 ## Install
 - Requirements
 ```
@@ -48,12 +55,12 @@ Please use the modules (`nn.Conv2d`, `nn.ReLU`, etc.), not the functions (`F.con
 ```python
 print(model)    # Should be actnn.QConv2d, actnn.QBatchNorm2d, etc.
 ```
-   
+
 
 ### Advanced Features
 - Convert the model manually.  
-ActNN is implemented as a collection of memory-saving layers, including `actnn.QConv1d, QConv2d, QConv3d, QConvTranspose1d, QConvTranspose2d, QConvTranspose3d, 
-    QBatchNorm1d, QBatchNorm2d, QBatchNorm3d, QLinear, QReLU, QSyncBatchNorm, QMaxPool2d`. These layers have identical interface to their PyTorch counterparts. 
+ActNN is implemented as a collection of memory-saving layers, including `actnn.QConv1d, QConv2d, QConv3d, QConvTranspose1d, QConvTranspose2d, QConvTranspose3d,
+    QBatchNorm1d, QBatchNorm2d, QBatchNorm3d, QLinear, QReLU, QSyncBatchNorm, QMaxPool2d`. These layers have identical interface to their PyTorch counterparts.
 You can construct the model manually using these layers as the building blocks.
 See `ResNetBuilder` and `resnet_configs` in [image_classification/image_classification/resnet.py](image_classification/image_classification/resnet.py) for example.
 - (Optional) Change the data loader  
@@ -134,9 +141,9 @@ For more detailed guidance, please refer to the docs of [mmcv](https://github.co
 ## FAQ
 1. Does ActNN supports CPU training?  
 Currently, ActNN only supports CUDA.
- 
+
 2. Accuracy degradation / diverged training with ActNN.  
-ActNN applies lossy compression to the activations. In some challenging cases, our default compression strategy might be too aggressive. 
+ActNN applies lossy compression to the activations. In some challenging cases, our default compression strategy might be too aggressive.
 In this case, you may try more conservative compression strategies (which consume more memory):
     - 4-bit per-group quantization  
    ```python
@@ -146,7 +153,7 @@ In this case, you may try more conservative compression strategies (which consum
    ```python
    actnn.set_optimization_level("L2")
    actnn.config.activation_compression_bits = [8]
-   ```  
+   ```
     If none of these works, you may report to us by creating an issue.
 
 ## Correspondence
@@ -159,10 +166,10 @@ Any questions or discussions are welcomed!
 If the actnn library is helpful in your research, please consider citing our paper:
 
 ```bibtex
-@inproceedings{chen2021actnn,
+@article{chen2021actnn,
   title={ActNN: Reducing Training Memory Footprint via 2-Bit Activation Compressed Training},
   author={Chen, Jianfei and Zheng, Lianmin and Yao, Zhewei and Wang, Dequan and Stoica, Ion and Mahoney, Michael and Gonzalez, Joseph},
-  booktitle={arXiv preprint arXiv:2104.14129},
+  journal={arXiv preprint arXiv:2104.14129},
   year={2021}
 }
 ```
