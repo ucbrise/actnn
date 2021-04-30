@@ -80,7 +80,8 @@ ActNN works seamlessly with [Amp](https://github.com/NVIDIA/apex), please see [i
 ## Examples
 
 ### Benchmark Memory Usage and Training Speed
-See [mem_speed_benchmark](mem_speed_benchmark/). Please do NOT measure the memory usage with `nvidia-smi`, which could be misleading.
+See [mem_speed_benchmark](mem_speed_benchmark/). Please do NOT measure the memory usage by `nvidia-smi`.
+`nvidia-smi` reports the size of the memory pool allocated by PyTorch, which can be much larger than the size of acutal used memory.
 
 ### Image Classification
 See [image_classification](image_classification/)
