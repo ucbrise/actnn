@@ -86,7 +86,7 @@ See [mem_speed_benchmark](mem_speed_benchmark/). Please do NOT measure the memor
 ### Image Classification
 See [image_classification](image_classification/)
 
-### Detection, Segmentation, ...
+### Object Detection, Semantic Segmentation, Self-Supervised Learning, ...
 Here is the example memory-efficient training for ResNet50, built upon the [OpenMMLab](https://openmmlab.com/) toolkits.
 We use ActNN with the default optimization level (L3).
 Our training runs are available at [Weights & Biases](https://wandb.ai/actnn).
@@ -101,7 +101,7 @@ cd $MMCV_ROOT
 MMCV_WITH_OPS=1 MMCV_WITH_ORT=0 pip install -e .
 ```
 
-2. Install [mmdet](https://github.com/DequanWang/actnn-mmdet), and [mmseg](https://github.com/DequanWang/actnn-mmseg), ...
+2. Install [mmdet](https://github.com/DequanWang/actnn-mmdet), [mmseg](https://github.com/DequanWang/actnn-mmseg), [mmssl](https://github.com/DequanWang/actnn-mmssl), ...
 ```bash
 export MMDET_ROOT=/path/to/clone/actnn-mmdet
 git clone https://github.com/DequanWang/actnn-mmdet $MMDET_ROOT
@@ -113,6 +113,13 @@ python setup.py develop
 export MMSEG_ROOT=/path/to/clone/actnn-mmseg
 git clone https://github.com/DequanWang/actnn-mmseg $MMSEG_ROOT
 cd $MMSEG_ROOT
+python setup.py develop
+```
+
+```bash
+export MMSSL_ROOT=/path/to/clone/actnn-mmssl
+git clone https://github.com/DequanWang/actnn-mmssl $MMSSL_ROOT
+cd $MMSSL_ROOT
 python setup.py develop
 ```
 
@@ -137,7 +144,16 @@ python tools/train.py configs/actnn/fpn_r50_512x1024_80k_cityscapes_1gpu.py
 # ActNN mIoU 74.7 vs Official mIoU 74.5
 ```
 
-For more detailed guidance, please refer to the docs of [mmcv](https://github.com/DequanWang/actnn-mmcv), [mmdet](https://github.com/DequanWang/actnn-mmdet), and [mmseg](https://github.com/DequanWang/actnn-mmseg).
+#### Multiple GPUs training
+```python
+cd $MMSSL_ROOT
+bash tools/dist_train.sh configs/selfsup/actnn/moco_r50_v2_bs512_e200_imagenet_2gpu.py 2
+# https://wandb.ai/actnn/mmssl/runs/lokf7ydo
+# https://wandb.ai/actnn/mmssl/runs/2efmbuww
+# ActNN top1 67.3 vs Official top1 67.7
+```
+
+For more detailed guidance, please refer to the docs of [mmcv](https://github.com/DequanWang/actnn-mmcv), [mmdet](https://github.com/DequanWang/actnn-mmdet), [mmseg](https://github.com/DequanWang/actnn-mmseg), [mmssl](https://github.com/DequanWang/actnn-mmssl).
 
 ## FAQ
 1. Does ActNN supports CPU training?  
