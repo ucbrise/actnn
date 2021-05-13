@@ -4,9 +4,7 @@ import math
 
 import numpy as np
 import torch
-from torch import nn, autograd
-from torch.nn import init, functional as F
-from torch.autograd.function import Function
+from torch.nn import functional as F
 
 from timeit_v2 import py_benchmark
 
