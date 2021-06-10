@@ -17,7 +17,7 @@ std::tuple<Tensor, Tensor, Tensor, int64_t, int64_t> prepare_layer_norm_inputs(
     const Tensor& weight /* optional */,
     const Tensor& bias /* optional */) {
 
-  const int normalized_ndim = normalized_shape.size();
+  const int64_t normalized_ndim = normalized_shape.size();
   TORCH_CHECK(
       normalized_ndim >= 1,
       "Expected normalized_shape to be at least 1-dimensional, i.e., ",

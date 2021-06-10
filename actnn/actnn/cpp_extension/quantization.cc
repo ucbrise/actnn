@@ -18,11 +18,11 @@ using torch::IntArrayRef;
 std::pair<Tensor, Tensor> pack_mixed_precision_cuda(
     Tensor data, Tensor min, Tensor max, Tensor bits, bool stochastic);
 Tensor unpack_mixed_precision_cuda(
-    Tensor data, Tensor bits, Tensor scale, Tensor min, int N, int num_groups, int group_size);
+    Tensor data, Tensor bits, Tensor scale, Tensor min, int64_t N, int64_t num_groups, int64_t group_size);
 std::pair<Tensor, Tensor> pack_single_precision_cuda(
     Tensor data, Tensor min, Tensor max, int bits, bool stochastic);
 Tensor unpack_single_precision_cuda(
-    Tensor data, int bits, Tensor scale, Tensor min, int N, int num_groups, int group_size);
+    Tensor data, int bits, Tensor scale, Tensor min, int64_t N, int64_t num_groups, int64_t group_size);
 
 // ActQuantizedReLU
 std::pair<Tensor, Tensor> act_quantized_relu_forward_cuda(Tensor data);
@@ -56,9 +56,9 @@ Tensor unpack_mixed_precision(Tensor data,
                               Tensor bits,
                               Tensor scale,
                               Tensor min,
-                              int N,
-                              int num_groups,
-                              int group_size) {
+                              int64_t N,
+                              int64_t num_groups,
+                              int64_t group_size) {
   CHECK_CUDA_TENSOR_DIM_TYPE(data, 1, torch::kInt32);
   CHECK_CUDA_TENSOR_DIM_TYPE(bits, 1, torch::kInt32);
   CHECK_CUDA_TENSOR_DIM_FLOAT(scale, 3);
@@ -86,9 +86,9 @@ Tensor unpack_single_precision(Tensor data,
                                int bits,
                                Tensor scale,
                                Tensor min,
-                               int N,
-                               int num_groups,
-                               int group_size) {
+                               int64_t N,
+                               int64_t num_groups,
+                               int64_t group_size) {
   CHECK_CUDA_TENSOR_DIM_TYPE(data, 1, torch::kInt8);
   CHECK_CUDA_TENSOR_DIM_FLOAT(scale, 3);
   CHECK_CUDA_TENSOR_DIM_FLOAT(min, 3);

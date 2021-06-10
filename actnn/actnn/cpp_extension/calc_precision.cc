@@ -15,7 +15,7 @@ torch::Tensor calc_precision(torch::Tensor b, torch::Tensor C, torch::Tensor w, 
     TORCH_CHECK(w.is_contiguous(), "w must be contiguous!");
 
     // min \sum_i C_i / (2^b_i - 1)^2, s.t., \sum_i b_i = N b
-    std::priority_queue<std::pair<float, int>> q;
+    std::priority_queue<std::pair<float, int64_t>> q;
 
     auto *b_data = b.data_ptr<int>();
     auto *C_data = C.data_ptr<float>();
@@ -27,9 +27,9 @@ torch::Tensor calc_precision(torch::Tensor b, torch::Tensor C, torch::Tensor w, 
         return C * (1.0 / coeff_1 - 1.0 / coeff_2);     // negative
     };
 
-    int N = b.size(0);
+    int64_t N = b.size(0);
     double b_sum = 0;
-    for (int i = 0; i < N; i++) {
+    for (int64_t i = 0; i < N; i++) {
         auto delta = get_obj(C_data[i], b_data[i]) / w_data[i];
         q.push(std::make_pair(delta, i));
         b_sum += b_data[i] * w_data[i];
@@ -51,7 +51,7 @@ torch::Tensor calc_precision(torch::Tensor b, torch::Tensor C, torch::Tensor w, 
 
 struct State {
     float obj;
-    int p, b;
+    int64_t p, b;
 };
 
 // Dynamic programming
@@ -72,10 +72,10 @@ std::pair<torch::Tensor, torch::Tensor> calc_precision_dp(torch::Tensor A, torch
     // the time complexity is O(N^2bs) states and O(bs) transitions
     // O((Nbs)^2) in total, where N=128, b=2, and s=2, (Nbs)^2 = 262144
 
-    int N  = A.size(0);
+    int64_t N  = A.size(0);
     auto *A_data = A.data_ptr<float>();
     auto *C_data = C.data_ptr<float>();
-    int total_states = target * N * states;
+    int64_t total_states = target * N * states;
 
     // Initialize
     std::vector<std::vector<State>> f(N+1);
@@ -87,13 +87,13 @@ std::pair<torch::Tensor, torch::Tensor> calc_precision_dp(torch::Tensor A, torch
     f[0][0].obj = 0;
 //    cout << "Initialized " << total_states << endl;
 
-    for (int i = 1; i <= N; i++) {
+    for (int64_t i = 1; i <= N; i++) {
         // Moving from f[i-1] to f[i]
-        for (int b = 0; b < total_states; b++) {
+        for (int64_t b = 0; b < total_states; b++) {
             auto &old_state = f[i-1][b];
 
-            for (int b0 = 1; b0 <= max_b; b0++)
-                for (int p = 1; p <= states; p++)
+            for (int64_t b0 = 1; b0 <= max_b; b0++)
+                for (int64_t p = 1; p <= states; p++)
                     if (b + b0 * p <= total_states) {
                         auto &new_state = f[i][b + b0 * p];
                         float p0 = (float)p / states;
@@ -112,8 +112,8 @@ std::pair<torch::Tensor, torch::Tensor> calc_precision_dp(torch::Tensor A, torch
     // Backtrace
     auto b_vec = torch::zeros({N}, A.options());
     auto p_vec = torch::zeros({N}, A.options());
-    int current_state = total_states;
-    for (int i = N; i > 0; i--) {
+    int64_t current_state = total_states;
+    for (int64_t i = N; i > 0; i--) {
         auto &state = f[i][current_state];
         b_vec[i-1] = state.b;
         p_vec[i-1] = (float)state.p / states;
