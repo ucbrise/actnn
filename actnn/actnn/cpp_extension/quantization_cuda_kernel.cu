@@ -10,6 +10,7 @@
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 
+#define BLOCK_Y_DIM_MAX ((1l << 16) - 1)
 
 using torch::IntArrayRef;
 using torch::Tensor;
@@ -42,13 +43,14 @@ __global__ void pack_mixed_precision_kernel(const int32_t* __restrict__ bits,
                                             std::pair<uint64_t, uint64_t> seeds,
                                             int64_t N,
                                             int64_t num_groups,
-                                            int64_t group_size) {
+                                            int64_t group_size,
+                                            int64_t block_idx_y_base) {
   extern __shared__ int packed_shared[];
 
-  const int n = blockIdx.y;
+  const int64_t n = blockIdx.y + block_idx_y_base;
   const int group_id = blockIdx.x;
   const int d = threadIdx.x;
-  const int64_t id = ((int64_t)n * num_groups + group_id) * group_size + d;
+  const int64_t id = (n * num_groups + group_id) * group_size + d;
   const int shared_len = group_size * bits[n] / (sizeof(int32_t) * 8);
 
   if (threadIdx.x * 2 < shared_len) {
@@ -86,7 +88,9 @@ std::pair<Tensor, Tensor> pack_mixed_precision_cuda(Tensor data,
   int64_t num_groups = data.size(1);
   int64_t group_size = data.size(2);
 
+  int max_bit = torch::max(bits).item<int32_t>();
   int bits_per_int = sizeof(int32_t) * 8;
+  TORCH_CHECK(group_size % bits_per_int == 0);
 
   // Compute total bits
   Tensor prefix_sum = torch::cumsum(bits, 0, torch::kInt32);
@@ -116,21 +120,22 @@ std::pair<Tensor, Tensor> pack_mixed_precision_cuda(Tensor data,
   }
   TORCH_CHECK(stochastic);
 
-  // Pack
-  int max_bit = torch::max(bits).item<int32_t>();
-  dim3 block_dim(num_groups, N, 1);
-  dim3 thread_dim(group_size, 1, 1);
-  TORCH_CHECK(group_size % bits_per_int == 0);
+  // Call pack kernels
+  int64_t logical_block_y_dim = N;
+  for (int block_idx_y_base = 0; block_idx_y_base < logical_block_y_dim; block_idx_y_base += BLOCK_Y_DIM_MAX) {
+    dim3 block_dim(num_groups, std::min(logical_block_y_dim - block_idx_y_base, BLOCK_Y_DIM_MAX), 1);
+    dim3 thread_dim(group_size, 1, 1);
 
-  AT_DISPATCH_FLOATING_TYPES_AND_HALF(data.scalar_type(), "pack_mixed_precision", ([&] {
-    pack_mixed_precision_kernel<<<block_dim, thread_dim, max_bit * group_size * sizeof(int) / bits_per_int>>>(
-      bits.data_ptr<int32_t>(), prefix_sum.data_ptr<int32_t>(),
-      data.data_ptr<scalar_t>(),
-      scale.data_ptr<scalar_t>(), min.data_ptr<scalar_t>(),
-      packed.data_ptr<int32_t>(),
-      rng_engine_inputs,
-      N, num_groups, group_size);
-  }));
+    AT_DISPATCH_FLOATING_TYPES_AND_HALF(data.scalar_type(), "pack_mixed_precision", ([&] {
+      pack_mixed_precision_kernel<<<block_dim, thread_dim, max_bit * group_size * sizeof(int) / bits_per_int>>>(
+        bits.data_ptr<int32_t>(), prefix_sum.data_ptr<int32_t>(),
+        data.data_ptr<scalar_t>(),
+        scale.data_ptr<scalar_t>(), min.data_ptr<scalar_t>(),
+        packed.data_ptr<int32_t>(),
+        rng_engine_inputs,
+        N, num_groups, group_size, 0);
+    }));
+  }
 
   return std::make_pair(packed, scale);
 }
@@ -145,11 +150,12 @@ __global__ void unpack_mixed_precision_kernel(const int32_t* __restrict__ bits,
                                               scalar_t* __restrict__ unpacked,
                                               int64_t N,
                                               int64_t num_groups,
-                                              int64_t group_size) {
-  const int n = blockIdx.y;
+                                              int64_t group_size,
+                                              int64_t logical_block_y_dim) {
+  const int64_t n = blockIdx.y + logical_block_y_dim;
   const int group_id = blockIdx.x;
   const int d = threadIdx.x;
-  const int64_t id = ((int64_t)n * num_groups + group_id) * group_size + d;
+  const int64_t id = (n * num_groups + group_id) * group_size + d;
   const int shared_len = group_size * bits[n] / 32;
 
   const int64_t global_offset = \
@@ -176,19 +182,23 @@ Tensor unpack_mixed_precision_cuda(Tensor data,
 
   auto options = torch::TensorOptions().dtype(scale.dtype()).device(data.device());
   Tensor unpacked = torch::empty({N, num_groups, group_size}, options);
-
-  dim3 block_dim(num_groups, N, 1);
-  dim3 thread_dim(group_size, 1, 1);
   TORCH_CHECK(group_size % 32 == 0);
 
-  AT_DISPATCH_FLOATING_TYPES_AND_HALF(scale.scalar_type(), "unpack_mixed_precision", ([&] {
-    unpack_mixed_precision_kernel<scalar_t><<<block_dim, thread_dim>>>(
-      bits.data_ptr<int32_t>(), prefix_sum.data_ptr<int32_t>(),
-      data.data_ptr<int32_t>(),
-      scale.data_ptr<scalar_t>(), min.data_ptr<scalar_t>(),
-      unpacked.data_ptr<scalar_t>(),
-      N, num_groups, group_size);
-  }));
+  // Call unpack kernels
+  int64_t logical_block_y_dim = N;
+  for (int block_idx_y_base = 0; block_idx_y_base < logical_block_y_dim; block_idx_y_base += BLOCK_Y_DIM_MAX) {
+    dim3 block_dim(num_groups, std::min(logical_block_y_dim - block_idx_y_base, BLOCK_Y_DIM_MAX), 1);
+    dim3 thread_dim(group_size, 1, 1);
+
+    AT_DISPATCH_FLOATING_TYPES_AND_HALF(scale.scalar_type(), "unpack_mixed_precision", ([&] {
+      unpack_mixed_precision_kernel<scalar_t><<<block_dim, thread_dim>>>(
+        bits.data_ptr<int32_t>(), prefix_sum.data_ptr<int32_t>(),
+        data.data_ptr<int32_t>(),
+        scale.data_ptr<scalar_t>(), min.data_ptr<scalar_t>(),
+        unpacked.data_ptr<scalar_t>(),
+        N, num_groups, group_size, block_idx_y_base);
+    }));
+  }
 
   return unpacked;
 }
@@ -287,10 +297,9 @@ std::pair<Tensor, Tensor> pack_single_precision_cuda(Tensor data,
   TORCH_CHECK(stochastic);
 
   // Call pack kernels
-  int64_t logical_block_y_dim =  (N + work_per_thread - 1) / work_per_thread;
-  const int64_t block_y_dim_max = (1 << 16) - 1;
-  for (int64_t block_idx_y_base = 0; block_idx_y_base < logical_block_y_dim; block_idx_y_base += block_y_dim_max) {
-    dim3 block_dim(num_groups, std::min(logical_block_y_dim - block_idx_y_base, block_y_dim_max), 1);
+  int64_t logical_block_y_dim = (N + work_per_thread - 1) / work_per_thread;
+  for (int64_t block_idx_y_base = 0; block_idx_y_base < logical_block_y_dim; block_idx_y_base += BLOCK_Y_DIM_MAX) {
+    dim3 block_dim(num_groups, std::min(logical_block_y_dim - block_idx_y_base, BLOCK_Y_DIM_MAX), 1);
     dim3 thread_dim(group_size, 1, 1);
   
     if (N % work_per_thread == 0) {
@@ -365,10 +374,9 @@ Tensor unpack_single_precision_cuda(Tensor data,
   TORCH_CHECK(8 % bits == 0);
 
   // Call unpack kernels
-  int64_t logical_block_y_dim =  (N + work_per_thread - 1) / work_per_thread;
-  const int64_t block_y_dim_max = (1 << 16) - 1;
-  for (int64_t block_idx_y_base = 0; block_idx_y_base < logical_block_y_dim; block_idx_y_base += block_y_dim_max) {
-    dim3 block_dim(num_groups, std::min(logical_block_y_dim - block_idx_y_base, block_y_dim_max), 1);
+  int64_t logical_block_y_dim = (N + work_per_thread - 1) / work_per_thread;
+  for (int64_t block_idx_y_base = 0; block_idx_y_base < logical_block_y_dim; block_idx_y_base += BLOCK_Y_DIM_MAX) {
+    dim3 block_dim(num_groups, std::min(logical_block_y_dim - block_idx_y_base, BLOCK_Y_DIM_MAX), 1);
     dim3 thread_dim(group_size, 1, 1);
  
     if (N % work_per_thread == 0) {
