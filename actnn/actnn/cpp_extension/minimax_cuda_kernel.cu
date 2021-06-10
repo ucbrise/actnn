@@ -24,13 +24,13 @@ template <typename scalar_t>
 __global__ void minimax_cuda_kernel(const scalar_t* __restrict__ data,
                                     scalar_t* __restrict__ min,
                                     scalar_t* __restrict__ max,
-                                    int N,
-                                    int D) {
+                                    int64_t N,
+                                    int64_t D) {
   scalar_t max_val, min_val;
   max_val = -1e30;
   min_val = 1e30;
 
-  for (int k1_outer = 0; k1_outer < D / 32; ++k1_outer) {
+  for (int64_t k1_outer = 0; k1_outer < D / 32; ++k1_outer) {
     max_val = std::max(max_val, data[blockIdx.x * D + k1_outer * 32 + threadIdx.x]);
     min_val = std::min(min_val, data[blockIdx.x * D + k1_outer * 32 + threadIdx.x]);
   }
@@ -68,8 +68,8 @@ __global__ void minimax_cuda_kernel(const scalar_t* __restrict__ data,
 
 
 std::pair<Tensor, Tensor> minimax_cuda(torch::Tensor data) {
-  int N = data.size(0);
-  int D = data.size(1);
+  int64_t N = data.size(0);
+  int64_t D = data.size(1);
 
   auto options = torch::TensorOptions().dtype(data.dtype()).device(data.device());
   Tensor min = torch::empty({N,}, options);

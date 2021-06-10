@@ -22,9 +22,9 @@ __global__ void compute_scale_mixed_precision_kernel(const int32_t* __restrict__
                                                      const scalar_t* __restrict__ min,
                                                      const scalar_t* __restrict__ max,
                                                      scalar_t* __restrict__ scale,
-                                                     int N,
-                                                     int num_groups) {
-  int id = blockIdx.x * blockDim.x + threadIdx.x;
+                                                     int64_t N,
+                                                     int64_t num_groups) {
+  int64_t id = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
 
   if (id < N * num_groups) {
     scale[id] = ((scalar_t)((1 << bits[id / num_groups]) - 1)) / (max[id] - min[id] + 2e-6);
@@ -40,15 +40,15 @@ __global__ void pack_mixed_precision_kernel(const int32_t* __restrict__ bits,
                                             const scalar_t* __restrict__ min,
                                             int32_t* __restrict__ packed,
                                             std::pair<uint64_t, uint64_t> seeds,
-                                            int N,
-                                            int num_groups,
-                                            int group_size) {
+                                            int64_t N,
+                                            int64_t num_groups,
+                                            int64_t group_size) {
   extern __shared__ int packed_shared[];
 
   const int n = blockIdx.y;
   const int group_id = blockIdx.x;
   const int d = threadIdx.x;
-  const int id = (n * num_groups + group_id) * group_size + d;
+  const int64_t id = ((int64_t)n * num_groups + group_id) * group_size + d;
   const int shared_len = group_size * bits[n] / (sizeof(int32_t) * 8);
 
   if (threadIdx.x * 2 < shared_len) {
@@ -82,15 +82,15 @@ std::pair<Tensor, Tensor> pack_mixed_precision_cuda(Tensor data,
                                                     Tensor max,
                                                     Tensor bits,
                                                     bool stochastic) {
-  int N = data.size(0);
-  int num_groups = data.size(1);
-  int group_size = data.size(2);
+  int64_t N = data.size(0);
+  int64_t num_groups = data.size(1);
+  int64_t group_size = data.size(2);
 
   int bits_per_int = sizeof(int32_t) * 8;
 
   // Compute total bits
   Tensor prefix_sum = torch::cumsum(bits, 0, torch::kInt32);
-  int64_t total_bits = ((int64_t) prefix_sum[-1].item<int32_t>()) * num_groups * group_size;
+  int64_t total_bits = (int64_t)prefix_sum[-1].item<int32_t>() * num_groups * group_size;
   auto options = torch::TensorOptions().dtype(torch::kInt32).device(data.device());
   Tensor packed = torch::empty({(total_bits + bits_per_int - 1) / bits_per_int,}, options);
 
@@ -143,13 +143,13 @@ __global__ void unpack_mixed_precision_kernel(const int32_t* __restrict__ bits,
                                               const scalar_t* __restrict__ scale,
                                               const scalar_t* __restrict__ min,
                                               scalar_t* __restrict__ unpacked,
-                                              int N,
-                                              int num_groups,
-                                              int group_size) {
+                                              int64_t N,
+                                              int64_t num_groups,
+                                              int64_t group_size) {
   const int n = blockIdx.y;
   const int group_id = blockIdx.x;
   const int d = threadIdx.x;
-  const int id = (n * num_groups + group_id) * group_size + d;
+  const int64_t id = ((int64_t)n * num_groups + group_id) * group_size + d;
   const int shared_len = group_size * bits[n] / 32;
 
   const int64_t global_offset = \
@@ -169,9 +169,9 @@ Tensor unpack_mixed_precision_cuda(Tensor data,
                                    Tensor bits,
                                    Tensor scale,
                                    Tensor min,
-                                   int N,
-                                   int num_groups,
-                                   int group_size) {
+                                   int64_t N,
+                                   int64_t num_groups,
+                                   int64_t group_size) {
   Tensor prefix_sum = torch::cumsum(bits, 0, torch::kInt32);
 
   auto options = torch::TensorOptions().dtype(scale.dtype()).device(data.device());
@@ -201,9 +201,9 @@ __global__ void compute_scale_single_precision_kernel(int32_t bits,
                                                       const scalar_t* __restrict__ min,
                                                       const scalar_t* __restrict__ max,
                                                       scalar_t* __restrict__ scale,
-                                                      int N,
-                                                      int num_groups) {
-  int id = blockIdx.x * blockDim.x + threadIdx.x;
+                                                      int64_t N,
+                                                      int64_t num_groups) {
+  int64_t id = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
 
   if (id < N * num_groups) {
     scale[id] = ((scalar_t)((1 << bits) - 1)) / (max[id] - min[id] + 2e-6);
@@ -218,25 +218,25 @@ __global__ void pack_single_precision_kernel(int32_t bits,
                                              const scalar_t* __restrict__ min,
                                              int8_t* __restrict__ packed,
                                              std::pair<uint64_t, uint64_t> seeds,
-                                             int N,
-                                             int num_groups,
-                                             int group_size) {
+                                             int64_t N,
+                                             int64_t num_groups,
+                                             int64_t group_size) {
   const int no = blockIdx.y;
   const int group_id = blockIdx.x;
   const int d = threadIdx.x;
   const int work_per_thread = 8 / bits;
-  const int64_t global_thread_id = (int64_t)(no * num_groups + group_id) * group_size + d;
+  const int64_t global_thread_id = ((int64_t)no * num_groups + group_id) * group_size + d;
 
   curandStatePhilox4_32_10_t state;
   curand_init(seeds.first, global_thread_id, seeds.second, &state);
 
   uint8_t local_packed = 0;
   for (int ni = 0; ni < work_per_thread; ni++) {
-    const int n = no * work_per_thread + ni;
+    const int64_t n = (int64_t)no * work_per_thread + ni;
 
     if (boundary_check && n >= N) { break; }
 
-    const int64_t id = (int64_t)(n * num_groups + group_id) * group_size + d;
+    const int64_t id = (n * num_groups + group_id) * group_size + d;
     const float noise = curand_uniform(&state);
     const int32_t val = __float2int_rn(fmax((data[id] - min[n * num_groups + group_id]) * scale[n * num_groups + group_id] + noise - 0.5, 0.0f));
     local_packed |= (val << (ni * bits));
@@ -251,16 +251,16 @@ std::pair<Tensor, Tensor> pack_single_precision_cuda(Tensor data,
                                                      Tensor max,
                                                      int bits,
                                                      bool stochastic) {
-  int N = data.size(0);
-  int num_groups = data.size(1);
-  int group_size = data.size(2);
+  int64_t N = data.size(0);
+  int64_t num_groups = data.size(1);
+  int64_t group_size = data.size(2);
 
   // Compute total bits
   int work_per_thread = 8 / bits;
   TORCH_CHECK(8 % bits == 0);
 
-  int N_round = N + (work_per_thread - N % work_per_thread) % work_per_thread;
-  int64_t total_bits = ((int64_t)bits) * (N_round * num_groups * group_size);
+  int64_t N_round = N + (work_per_thread - N % work_per_thread) % work_per_thread;
+  int64_t total_bits = (int64_t)bits * (N_round * num_groups * group_size);
   auto options = torch::TensorOptions().dtype(torch::kInt8).device(data.device());
   Tensor packed = torch::empty({(total_bits + 8) / 8,}, options);
 
@@ -321,25 +321,25 @@ __global__ void unpack_single_precision_kernel(int32_t bits,
                                                const scalar_t* __restrict__ scale,
                                                const scalar_t* __restrict__ min,
                                                scalar_t* __restrict__ unpacked,
-                                               int N,
-                                               int num_groups,
-                                               int group_size) {
+                                               int64_t N,
+                                               int64_t num_groups,
+                                               int64_t group_size) {
   const int no = blockIdx.y;
   const int group_id = blockIdx.x;
   const int d = threadIdx.x;
-  const int64_t global_thread_id = (int64_t)(no * num_groups + group_id) * group_size + d;
+  const int64_t global_thread_id = ((int64_t)no * num_groups + group_id) * group_size + d;
 
   int work_per_thread = 8 / bits;
 
   uint8_t local_packed = data[global_thread_id];
   int mask = ((1 << bits) - 1);
   for (int ni = 0; ni < work_per_thread; ni++) {
-    const int n = no * work_per_thread + ni;
+    const int64_t n = (int64_t)no * work_per_thread + ni;
 
     if (boundary_check && n >= N) { break; }
 
     const int val = (local_packed >> (ni * bits)) & mask;
-    const int64_t id = (int64_t)(n * num_groups + group_id) * group_size + d;
+    const int64_t id = (n * num_groups + group_id) * group_size + d;
     unpacked[id] = ((scalar_t)val) / scale[n * num_groups + group_id] + min[n * num_groups + group_id];
   }
 }
@@ -349,9 +349,9 @@ Tensor unpack_single_precision_cuda(Tensor data,
                                     int bits,
                                     Tensor scale,
                                     Tensor min,
-                                    int N,
-                                    int num_groups,
-                                    int group_size) {
+                                    int64_t N,
+                                    int64_t num_groups,
+                                    int64_t group_size) {
   auto options = torch::TensorOptions().dtype(scale.dtype()).device(data.device());
   Tensor unpacked = torch::empty({N, num_groups, group_size}, options);
 
@@ -395,10 +395,10 @@ template <typename scalar_t>
 __global__ void act_quantized_relu_forward_kernel(const scalar_t* __restrict__ data,
                                                   int32_t* __restrict__ mask,
                                                   scalar_t* __restrict__ output,
-                                                  int N,
-                                                  int mask_len) {
-  const int id = blockIdx.x * blockDim.x + threadIdx.x;
-  const int global_offset = blockIdx.x * blockDim.x / (sizeof(int32_t) * 8);
+                                                  int64_t N,
+                                                  int64_t mask_len) {
+  const int64_t id = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  const int64_t global_offset = (int64_t)blockIdx.x * blockDim.x / (sizeof(int32_t) * 8);
   const int shared_len = ACT_QUANTIZED_RELU_NUM_THREADS / (sizeof(int32_t) * 8);
   __shared__ int mask_shared[ACT_QUANTIZED_RELU_NUM_THREADS / (sizeof(int32_t) * 8)];
 
@@ -425,13 +425,13 @@ __global__ void act_quantized_relu_forward_kernel(const scalar_t* __restrict__ d
 }
 
 std::pair<Tensor, Tensor> act_quantized_relu_forward_cuda(Tensor data) {
-  int n_elements = 1;
+  int64_t n_elements = 1;
   for (size_t i = 0; i < data.dim(); ++i) {
     n_elements *= data.size(i);
   }
 
   auto options = torch::TensorOptions().dtype(torch::kInt32).device(data.device());
-  int mask_len = (n_elements + sizeof(int32_t) * 8 - 1) / (sizeof(int32_t) * 8);
+  int64_t mask_len = (n_elements + sizeof(int32_t) * 8 - 1) / (sizeof(int32_t) * 8);
   Tensor mask = torch::empty({mask_len}, options);
   Tensor output = torch::empty_like(data);
 
@@ -452,8 +452,8 @@ __global__ void act_quantized_relu_backward_kernel(const scalar_t* __restrict__ 
                                                    int32_t* __restrict__ mask,
                                                    scalar_t* __restrict__ grad_input,
                                                    int N) {
-  int id = blockIdx.x * blockDim.x + threadIdx.x;
-  const int global_offset = blockIdx.x * blockDim.x / (sizeof(int32_t) * 8);
+  int64_t id = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
+  const int64_t global_offset = (int64_t)blockIdx.x * blockDim.x / (sizeof(int32_t) * 8);
   const int shared_len = ACT_QUANTIZED_RELU_NUM_THREADS / (sizeof(int32_t) * 8);
 
   if (id < N) {
@@ -468,7 +468,7 @@ __global__ void act_quantized_relu_backward_kernel(const scalar_t* __restrict__ 
 
 
 Tensor act_quantized_relu_backward_cuda(Tensor grad_output, Tensor mask) {
-  int n_elements = 1;
+  int64_t n_elements = 1;
   for (size_t i = 0; i < grad_output.dim(); ++i) {
     n_elements *= grad_output.size(i);
   }
@@ -496,11 +496,11 @@ template <typename scalar_t>
 __global__ void act_quantized_max_pool2d_forward_kernel(const scalar_t* __restrict__ input,
                                                         scalar_t* __restrict__ output,
                                                         int8_t* __restrict__ max_indices,
-                                                        int n_elements,
+                                                        int64_t n_elements,
                                                         int N, int C, int H, int W, int H_out, int W_out,
                                                         int KH, int KW, int SH, int SW, int PH, int PW,
                                                         int DH, int DW) {
-  int id = blockIdx.x * blockDim.x + threadIdx.x;
+  int64_t id = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
 
   if (id < n_elements) {
     int nc = id / (H_out * W_out);
@@ -533,12 +533,12 @@ __global__ void act_quantized_max_pool2d_forward_kernel(const scalar_t* __restri
 std::pair<Tensor, Tensor> act_quantized_max_pool2d_forward_cuda(Tensor input,
         IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation,
         bool ceil_mode, bool return_indices) {
-  int N = input.size(0);
-  int C = input.size(1);
-  int H = input.size(2);
-  int W = input.size(3);
-  int H_out = (H + 2 * padding[0] - dilation[0] * (kernel_size[0] - 1) - 1) / stride[0] + 1;
-  int W_out = (W + 2 * padding[1] - dilation[1] * (kernel_size[1] - 1) - 1) / stride[1] + 1;
+  int64_t N = input.size(0);
+  int64_t C = input.size(1);
+  int64_t H = input.size(2);
+  int64_t W = input.size(3);
+  int64_t H_out = (H + 2 * padding[0] - dilation[0] * (kernel_size[0] - 1) - 1) / stride[0] + 1;
+  int64_t W_out = (W + 2 * padding[1] - dilation[1] * (kernel_size[1] - 1) - 1) / stride[1] + 1;
   auto options = torch::TensorOptions().dtype(input.dtype()).device(input.device());
   Tensor output = torch::empty({N, C, H_out, W_out}, options);
   options = torch::TensorOptions().dtype(torch::kInt8).device(input.device());
@@ -546,8 +546,8 @@ std::pair<Tensor, Tensor> act_quantized_max_pool2d_forward_cuda(Tensor input,
   TORCH_CHECK(!return_indices, "Do not support return_indices");
   Tensor max_indices = torch::empty({N, C, H_out, W_out}, options);
 
+  int64_t n_elements = N * C * H_out * W_out;
   int threads = ACT_QUANTIZED_MAX_POOL2D_NUM_THREADS;
-  int n_elements = N * C * H_out * W_out;
   int blocks = (n_elements + threads - 1) / threads;
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(input.scalar_type(), "act_quantized_max_pool2d_forward", ([&] {
@@ -564,11 +564,11 @@ template <typename scalar_t>
 __global__ void act_quantized_max_pool2d_backward_kernel(const scalar_t* __restrict__ grad_output,
                                                          int8_t* __restrict__ max_indices,
                                                          scalar_t* __restrict__ grad_input,
-                                                         int n_elements,
+                                                         int64_t n_elements,
                                                          int N, int C, int H, int W, int H_out, int W_out,
                                                          int KH, int KW, int SH, int SW, int PH, int PW,
                                                          int DH, int DW) {
-  int id = blockIdx.x * blockDim.x + threadIdx.x;
+  int64_t id = (int64_t)blockIdx.x * blockDim.x + threadIdx.x;
 
   if (id < n_elements) {
     int nc = id / (H_out * W_out);
@@ -592,15 +592,15 @@ Tensor act_quantized_max_pool2d_backward_cuda(Tensor grad_output, Tensor max_ind
   auto options = torch::TensorOptions().dtype(grad_output.dtype()).device(grad_output.device());
   Tensor grad_input =  torch::zeros(input_shape, options);
 
-  int N = grad_output.size(0);
-  int C = grad_output.size(1);
-  int H_out = grad_output.size(2);
-  int W_out = grad_output.size(3);
-  int H = input_shape[2];
-  int W = input_shape[3];
+  int64_t N = grad_output.size(0);
+  int64_t C = grad_output.size(1);
+  int64_t H_out = grad_output.size(2);
+  int64_t W_out = grad_output.size(3);
+  int64_t H = input_shape[2];
+  int64_t W = input_shape[3];
 
+  int64_t n_elements = N * C * H_out * W_out;
   int threads = ACT_QUANTIZED_MAX_POOL2D_NUM_THREADS;
-  int n_elements = N * C * H_out * W_out;
   int blocks = (n_elements + threads - 1) / threads;
 
   AT_DISPATCH_FLOATING_TYPES_AND_HALF(grad_output.scalar_type(), "act_quantized_max_pool2d_backward", ([&] {
