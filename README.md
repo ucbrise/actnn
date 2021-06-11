@@ -173,11 +173,6 @@ In this case, you may try more conservative compression strategies (which consum
    ```
     If none of these works, you may report to us by creating an issue.
 
-## Correspondence
-
-Please email [Jianfei Chen](mailto:jianfeic@berkeley.edu) and [Lianmin Zheng](mailto:lmzheng@berkeley.edu).
-Any questions or discussions are welcomed!
-
 ## Citation
 
 If the actnn library is helpful in your research, please consider citing our paper:
