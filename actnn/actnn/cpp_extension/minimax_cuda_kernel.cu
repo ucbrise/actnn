@@ -14,7 +14,7 @@ __device__ __inline__ c10::Half __shfl_down_sync(const unsigned mask, const c10:
 
 
 __device__ __inline__ c10::Half __shfl_sync(const unsigned mask, const c10::Half var,
-                                            const unsigned int delta, const int width) {
+                                            const int delta, const int width) {
   __half var_ = var;
   return __shfl_sync(mask, var_, delta, width);
 }
