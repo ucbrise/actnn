@@ -1,5 +1,5 @@
 /*
- * Cuda kernels for quantization and mixed-precision packing
+ * Cuda kernels for quantization and mixed-precision packing.
  */
 
 #include <torch/extension.h>
@@ -408,7 +408,7 @@ Tensor unpack_single_precision_cuda(Tensor data,
 /********** Act Quantized ReLU **********/
 /****************************************/
 #define ACT_QUANTIZED_RELU_NUM_THREADS 512
-// Unpack int32 bit stream to float16/32 data
+// Compute ReLU forward and 1-bit activations (mask) and pack the mask into int32 streams
 template <typename scalar_t>
 __global__ void act_quantized_relu_forward_kernel(const scalar_t* __restrict__ data,
                                                   int32_t* __restrict__ mask,
@@ -465,6 +465,7 @@ std::pair<Tensor, Tensor> act_quantized_relu_forward_cuda(Tensor data) {
   return std::make_pair(output, mask);
 }
 
+// Unpack 1-bit activations (mask) from the saved int32 stream and compute ReLU backward
 template <typename scalar_t>
 __global__ void act_quantized_relu_backward_kernel(const scalar_t* __restrict__ grad_output,
                                                    int32_t* __restrict__ mask,
