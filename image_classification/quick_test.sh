@@ -1,5 +1,5 @@
 python3 main.py --dataset cifar10 --arch preact_resnet56 --epochs 200 --num-classes 100 -j 0 --weight-decay 1e-4 --batch-size 128 --label-smoothing 0 \
-    -c quantize --ca=True --cabits=2 --ibits=8 --calg pl \
+    -c quantize --ca=True --actnn-level L3 \
     --workspace results/tmp --evaluate --training-only \
     --resume results/cifar100/checkpoint-10.pth.tar --resume2 results/cifar100/checkpoint-10.pth.tar  ~/data/cifar100
 

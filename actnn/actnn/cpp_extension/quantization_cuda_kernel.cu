@@ -10,7 +10,8 @@
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 
-#define BLOCK_Y_DIM_MAX ((1l << 16) - 1)
+#define BLOCK_Y_DIM_MAX ((((int64_t)(1)) << 16) - 1)
+#define fmax(a, b) ((a) > (b) ? (a): (b))
 
 using torch::IntArrayRef;
 using torch::Tensor;
