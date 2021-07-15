@@ -58,6 +58,6 @@ python3 main.py --dataset cifar10 --arch preact_resnet56 --epochs 200 --num-clas
     --resume results/cifar100/checkpoint-10.pth.tar --resume2 results/cifar100/checkpoint-10.pth.tar  ~/data/cifar100
 ```
 
-| *quantize config* | *Overall Var* | 
-|--------|----------|
-| -c quantize --ca=True --actnn-level L3 | 0.03805697709321976 | 
+| *quantize config* | *Overall Bias* | *Overall Var* | 
+| -------- | ---------- | ---- |
+| -c quantize --ca=True --actnn-level L3 | 0.03929 | 0.07694 | 
