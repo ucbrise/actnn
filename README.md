@@ -178,10 +178,10 @@ In this case, you may try more conservative compression strategies (which consum
 If the actnn library is helpful in your research, please consider citing our paper:
 
 ```bibtex
-@article{chen2021actnn,
+@inproceedings{chen2021actnn,
   title={ActNN: Reducing Training Memory Footprint via 2-Bit Activation Compressed Training},
   author={Chen, Jianfei and Zheng, Lianmin and Yao, Zhewei and Wang, Dequan and Stoica, Ion and Mahoney, Michael W and Gonzalez, Joseph E},
-  journal={arXiv preprint arXiv:2104.14129},
+  booktitle={International Conference on Machine Learning},
   year={2021}
 }
 ```
