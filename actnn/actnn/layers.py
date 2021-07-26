@@ -369,6 +369,15 @@ class QReLU(nn.Module):
         return ext_quantization.act_quantized_relu(input)
 
 
+class QDropout(nn.Module):
+    def __init__(self, p=0.5):
+        super().__init__()
+        self.p = p
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        return ext_quantization.act_quantized_dropout(input, self.p)
+
+
 class QSyncBatchNorm(nn.SyncBatchNorm):
     def __init__(
         self,
