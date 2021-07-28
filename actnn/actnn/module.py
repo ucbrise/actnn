@@ -7,7 +7,7 @@ from torch import Tensor, device, dtype
 
 from actnn.layers import QConv1d, QConv2d, QConv3d, QConvTranspose1d, QConvTranspose2d, QConvTranspose3d, \
     QBatchNorm1d, QBatchNorm2d, QBatchNorm3d, QSyncBatchNorm, \
-    QReLU, QLinear, QMaxPool2d, QAvgPool2d
+    QReLU, QDropout, QLinear, QMaxPool2d, QAvgPool2d
 from actnn.conf import config
 
 
@@ -23,7 +23,7 @@ class QModule(nn.Module):
             # Do not convert layers that are already quantized
             if isinstance(child, (QConv1d, QConv2d, QConv3d, QConvTranspose1d, QConvTranspose2d, QConvTranspose3d,
                                   QBatchNorm1d, QBatchNorm2d, QBatchNorm3d, QSyncBatchNorm,
-                                  QReLU, QLinear, QMaxPool2d, QAvgPool2d)):
+                                  QReLU, QDropout, QLinear, QMaxPool2d, QAvgPool2d)):
                 continue
 
             if isinstance(child, nn.Conv1d):
@@ -64,6 +64,8 @@ class QModule(nn.Module):
                     child.bias is not None))
             elif isinstance(child, nn.ReLU):
                 setattr(module, name, QReLU())
+            elif isinstance(child, nn.Dropout):
+                setattr(module, name, QDropout(child.p))
             elif isinstance(child, nn.MaxPool2d):
                 setattr(module, name, QMaxPool2d(child.kernel_size, child.stride,
                     child.padding, child.dilation, child.return_indices, child.ceil_mode))
