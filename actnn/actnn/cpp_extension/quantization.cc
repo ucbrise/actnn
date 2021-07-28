@@ -28,6 +28,10 @@ Tensor unpack_single_precision_cuda(
 std::pair<Tensor, Tensor> act_quantized_relu_forward_cuda(Tensor data);
 Tensor act_quantized_relu_backward_cuda(Tensor grad_output, Tensor mask);
 
+// ActQuantizedDropout
+std::pair<Tensor, Tensor> act_quantized_dropout_forward_cuda(Tensor data, float dropout_p);
+Tensor act_quantized_dropout_backward_cuda(Tensor grad_output, Tensor mask);
+
 // ActQuantizedMaxPool2d
 std::pair<Tensor, Tensor> act_quantized_max_pool2d_forward_cuda(Tensor input,
         IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation,
@@ -120,6 +124,28 @@ Tensor act_quantized_relu(Tensor input) {
 }
 
 
+// Activation quantized dropout: use compressed bit stream to store activation
+class ActQuantizedDropout : public Function<ActQuantizedDropout> {
+ public:
+  static Tensor forward(AutogradContext *ctx, Tensor input, float dropout_p) {
+    Tensor output, mask;
+    std::tie(output, mask) = act_quantized_dropout_forward_cuda(input, dropout_p);
+    ctx->save_for_backward({mask});
+    return output;
+  }
+
+  static tensor_list backward(AutogradContext *ctx, tensor_list grad_outputs) {
+    auto saved = ctx->get_saved_variables();
+    return {act_quantized_dropout_backward_cuda(grad_outputs[0], saved[0]), Tensor()};
+  }
+};
+
+Tensor act_quantized_dropout(Tensor input, float dropout_p) {
+  CHECK_CUDA_TENSOR_FLOAT(input);
+  return ActQuantizedDropout::apply(input, dropout_p);
+}
+
+
 // Activation quantized max_pool2d: use compressed bit stream to store activation
 class ActQuantizedMaxPool2d : public Function<ActQuantizedMaxPool2d> {
  public:
@@ -173,5 +199,6 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("pack_single_precision", &pack_single_precision);
   m.def("unpack_single_precision", &unpack_single_precision);
   m.def("act_quantized_relu", &act_quantized_relu);
+  m.def("act_quantized_dropout", &act_quantized_dropout);
   m.def("act_quantized_max_pool2d", &act_quantized_max_pool2d);
 }

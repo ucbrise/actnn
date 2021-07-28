@@ -94,6 +94,64 @@ def test_relu_speed():
                 (forward_us * 1e3, backward_us * 1e3, (forward_us + backward_us) * 1e3))
 
 
+def test_dropout_memory():
+    print("========== Dropout Memory Test ==========")
+
+    for dtype in ['float32', 'float16']:
+        print(f"test {dtype}...")
+        data_np = np.random.randn(128, 56, 56, 32).astype(dtype)
+
+        def test_implementation(func):
+            data = torch.tensor(data_np).to("cuda").requires_grad_()
+
+            before = get_memory_usage()
+
+            for i in range(10):
+                data = func(data, 0.2)
+
+            after = get_memory_usage()
+            
+            return after - before
+
+        usage_ref = test_implementation(F.dropout)
+        usage_us = test_implementation(ext_quantization.act_quantized_dropout)
+
+        print("Exact.     Usage: %.2f MB" % (usage_ref / 2 ** 20))
+        print("Quantized. Usage: %.2f MB" % (usage_us / 2 ** 20))
+
+
+def test_dropout_speed():
+    print("========== Dropout Speed Test ==========")
+
+    for dtype in ['float32', 'float16']:
+        print(f"test {dtype}...")
+
+        data_np = np.random.randn(256, 56, 56, 32).astype(dtype)
+
+        def test_implementation(func):
+            data = torch.tensor(data_np).to("cuda").requires_grad_()
+
+            stmt = "func(data, 0.2)"
+            t_forward = py_benchmark(stmt, {**globals(), **locals()},
+                                     setup="torch.cuda.synchronize()", finish="torch.cuda.synchronize()")
+
+            output = func(data, 0.2)
+            head = torch.ones_like(output)
+            stmt = "output.backward(head, retain_graph=True)"
+            t_backward = py_benchmark(stmt, {**globals(), **locals()},
+                                     setup="torch.cuda.synchronize()", finish="torch.cuda.synchronize()")
+
+            return t_forward, t_backward
+
+        forward_ref, backward_ref = test_implementation(F.dropout)
+        forward_us, backward_us = test_implementation(ext_quantization.act_quantized_dropout)
+
+        print("Exact.     forward: %.2f ms\tbackward: %.2f ms\tsum: %.2f ms" %
+                (forward_ref * 1e3, backward_ref * 1e3, (forward_ref + backward_ref) * 1e3))
+        print("Quantized. forward: %.2f ms\tbackward: %.2f ms\tsum: %.2f ms" %
+                (forward_us * 1e3, backward_us * 1e3, (forward_us + backward_us) * 1e3))
+
+
 def test_adaptive_avg_pool2d_correctness():
     """Test the correctness of computation results"""
     # arguments and test data
@@ -564,6 +622,9 @@ if __name__ == "__main__":
     test_relu_correctness()
     test_relu_memory()
     test_relu_speed()
+
+    test_dropout_memory()
+    test_dropout_speed()
 
     #test_adaptive_avg_pool2d_correctness()
     #test_adaptive_avg_pool2d_memory()
