@@ -30,7 +30,7 @@ Tensor act_quantized_relu_backward_cuda(Tensor grad_output, Tensor mask);
 
 // ActQuantizedDropout
 std::pair<Tensor, Tensor> act_quantized_dropout_forward_cuda(Tensor data, float dropout_p);
-Tensor act_quantized_dropout_backward_cuda(Tensor grad_output, Tensor mask);
+Tensor act_quantized_dropout_backward_cuda(Tensor grad_output, Tensor mask, float dropout_p);
 
 // ActQuantizedMaxPool2d
 std::pair<Tensor, Tensor> act_quantized_max_pool2d_forward_cuda(Tensor input,
@@ -131,12 +131,14 @@ class ActQuantizedDropout : public Function<ActQuantizedDropout> {
     Tensor output, mask;
     std::tie(output, mask) = act_quantized_dropout_forward_cuda(input, dropout_p);
     ctx->save_for_backward({mask});
+    ctx->saved_data["dropout_p"] = dropout_p;
     return output;
   }
 
   static tensor_list backward(AutogradContext *ctx, tensor_list grad_outputs) {
     auto saved = ctx->get_saved_variables();
-    return {act_quantized_dropout_backward_cuda(grad_outputs[0], saved[0]), Tensor()};
+    float dropout_p = float(ctx->saved_data["dropout_p"].toDouble());
+    return {act_quantized_dropout_backward_cuda(grad_outputs[0], saved[0], dropout_p), Tensor()};
   }
 };
 
