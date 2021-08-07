@@ -45,7 +45,7 @@ python3 main.py --dataset cifar10 --arch preact_resnet56 --epochs 200 --num-clas
 ## Check gradient variance 
 Download model checkpoints
 ```
-wget https://people.eecs.berkeley.edu/~jianfei/results.tar.gz
+wget https://ml.cs.tsinghua.edu.cn/~jianfei/static/results.tar.gz
 tar xzvf results.tar.gz
 mkdir results/tmp
 ```
