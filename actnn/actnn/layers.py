@@ -372,7 +372,6 @@ class QReLU(nn.Module):
 class QDropout(nn.Dropout):
     def __init__(self, p=0.5):
         super().__init__(p=p)
-        self.p = p
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         if self.training:

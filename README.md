@@ -18,11 +18,14 @@ The increasing size of neural network models has been critical for improvements 
 ```
 torch>=1.7.1
 torchvision>=0.8.2
+ninja>=1.10.1
 ```
+GPU and CUDA Toolkit are required.
 
 - Build
 ```bash
-cd actnn
+git clone git@github.com:ucbrise/actnn.git
+cd actnn/actnn
 pip install -v -e .
 ```
 

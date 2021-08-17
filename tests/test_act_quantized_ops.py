@@ -623,8 +623,8 @@ if __name__ == "__main__":
     test_relu_memory()
     test_relu_speed()
 
-    test_dropout_memory()
-    test_dropout_speed()
+    #test_dropout_memory()
+    #test_dropout_speed()
 
     #test_adaptive_avg_pool2d_correctness()
     #test_adaptive_avg_pool2d_memory()
