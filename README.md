@@ -16,7 +16,7 @@ The increasing size of neural network models has been critical for improvements 
 ## Install
 - Requirements
 ```
-torch>=1.7.1
+torch>=1.7.1,<=1.8.0
 torchvision>=0.8.2
 ninja>=1.10.1
 ```
