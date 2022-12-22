@@ -35,7 +35,7 @@ def compute_tensor_bytes(tensors):
         elif x.dtype in [torch.bfloat16, torch.float16, torch.int16]:
             ret += np.prod(x.size()) * 2
         elif x.dtype in [torch.int8]:
-            ret += np.prod(x.size()) * 2
+            ret += np.prod(x.size()) * 1
 
     return ret
 
